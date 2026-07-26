@@ -5,11 +5,17 @@ import os
 from google import genai
 from google.genai import types
 
-# Initialize the Gemini Client
-# The client automatically picks up the GEMINI_API_KEY environment variable
-client = genai.Client()
 
-def search_and_extract_with_gemini(university, program):
+def get_gemini_client(api_key=None):
+    key = api_key or os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+    if not key:
+        raise ValueError(
+            "No Gemini API key was provided. Enter your API key in the sidebar or set GEMINI_API_KEY."
+        )
+    return genai.Client(api_key=key)
+
+
+def search_and_extract_with_gemini(university, program, api_key=None):
     """
     Uses Gemini 2.5 Flash to search the web for the program details
     and strictly return the data in a JSON schema.
@@ -27,6 +33,8 @@ def search_and_extract_with_gemini(university, program):
     "deadline", "fee", "requirements", "faculty", "students".
     """
     
+    client = get_gemini_client(api_key=api_key)
+
     # Configure the API request to use Google Search as a tool and enforce JSON output
     response = client.models.generate_content(
         model='gemini-2.5-flash',
@@ -57,6 +65,15 @@ st.title("🎓 Gemini-Powered PhD Application Tracker")
 st.write("Enter your target programs. Gemini will search the web in real-time to gather deadlines, faculty, and requirements.")
 
 # User Inputs
+st.sidebar.header("Configuration")
+api_key_input = st.sidebar.text_input(
+    "Gemini API Key",
+    type="password",
+    help="Create one at https://ai.google.dev/gemini-api/docs/api-key",
+)
+if api_key_input:
+    os.environ["GEMINI_API_KEY"] = api_key_input
+
 col1, col2 = st.columns(2)
 with col1:
     university_input = st.text_input("University (e.g., MIT)")
@@ -68,24 +85,32 @@ if "tracker_data" not in st.session_state:
     st.session_state.tracker_data = []
 
 if st.button("Search & Extract Intelligence"):
-    if university_input and program_input:
+    if not api_key_input:
+        st.warning("Please enter a Gemini API key in the sidebar first.")
+    elif university_input and program_input:
         with st.spinner(f"Gemini is searching the web for {university_input} - {program_input}..."):
-            
-            # Execute the grounded search and extraction
-            extracted_json = search_and_extract_with_gemini(university_input, program_input)
-            
-            # Add the new data to our session state list
-            st.session_state.tracker_data.append({
-                "University": university_input,
-                "Program": program_input,
-                "Deadline": extracted_json.get('deadline', 'N/A'),
-                "Fee": extracted_json.get('fee', 'N/A'),
-                "Requirements": extracted_json.get('requirements', 'N/A'),
-                "Faculty": str(extracted_json.get('faculty', 'N/A')),
-                "Students": str(extracted_json.get('students', 'N/A'))
-            })
-            
-            st.success(f"Data successfully extracted for {university_input}!")
+            try:
+                # Execute the grounded search and extraction
+                extracted_json = search_and_extract_with_gemini(
+                    university_input,
+                    program_input,
+                    api_key=api_key_input,
+                )
+            except Exception as exc:
+                st.error(f"Gemini request failed: {exc}")
+            else:
+                # Add the new data to our session state list
+                st.session_state.tracker_data.append({
+                    "University": university_input,
+                    "Program": program_input,
+                    "Deadline": extracted_json.get('deadline', 'N/A'),
+                    "Fee": extracted_json.get('fee', 'N/A'),
+                    "Requirements": extracted_json.get('requirements', 'N/A'),
+                    "Faculty": str(extracted_json.get('faculty', 'N/A')),
+                    "Students": str(extracted_json.get('students', 'N/A'))
+                })
+
+                st.success(f"Data successfully extracted for {university_input}!")
 
     else:
         st.warning("Please provide both a University and a Program.")
