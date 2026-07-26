@@ -17,7 +17,7 @@ def get_gemini_client(api_key=None):
 
 def search_and_extract_with_gemini(university, program, api_key=None):
     """
-    Uses the Gemini deep research preview model to search the web for the program details
+    Uses the Gemini 3.6 Flash model to search the web for the program details
     and strictly return the data in a JSON schema.
     """
     prompt = f"""
