@@ -17,7 +17,7 @@ def get_gemini_client(api_key=None):
 
 def search_and_extract_with_gemini(university, program, api_key=None):
     """
-    Uses Gemini 2.5 Flash to search the web for the program details
+    Uses Gemini 2.0 Pro to search the web for the program details
     and strictly return the data in a JSON schema.
     """
     prompt = f"""
@@ -37,7 +37,7 @@ def search_and_extract_with_gemini(university, program, api_key=None):
 
     # Configure the API request to use Google Search as a tool and enforce JSON output
     response = client.models.generate_content(
-        model='gemini-2.0-flash',
+        model='gemini-2.0-pro',
         contents=prompt,
         config=types.GenerateContentConfig(
             tools=[types.Tool(google_search=types.GoogleSearch())],
