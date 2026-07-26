@@ -37,7 +37,7 @@ def search_and_extract_with_gemini(university, program, api_key=None):
 
     # Configure the API request to use Google Search as a tool and enforce JSON output
     response = client.models.generate_content(
-        model='gemini-2.5-flash',
+        model='gemini-2.0-flash',
         contents=prompt,
         config=types.GenerateContentConfig(
             tools=[types.Tool(google_search=types.GoogleSearch())],
